@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // 老師 = 用 Google 帳號登入的人；學生是匿名身分，不能出題
+    function isTeacher() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    match /polls/{pollId} {
+      // 學生要用代碼找到題目，所以登入者（含匿名）都能讀題目
+      allow read: if signedIn();
+
+      allow create: if isTeacher()
+        && request.resource.data.keys().hasOnly(['ownerUid', 'code', 'question', 'options', 'round', 'open', 'createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.code is string
+        && request.resource.data.code.size() >= 4
+        && request.resource.data.code.size() <= 5
+        && request.resource.data.question is string
+        && request.resource.data.question.size() > 0
+        && request.resource.data.question.size() <= 300
+        && request.resource.data.options is list
+        && request.resource.data.options.size() >= 2
+        && request.resource.data.options.size() <= 6
+        && request.resource.data.round == 1
+        && request.resource.data.open is bool;
+
+      // 只有出題的老師能改，而且只能改「第幾輪」和「是否開放」
+      allow update: if isTeacher()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['round', 'open'])
+        && request.resource.data.round in [1, 2]
+        && request.resource.data.open is bool;
+
+      allow delete: if isTeacher() && resource.data.ownerUid == request.auth.uid;
+
+      match /votes/{voteId} {
+        function poll() {
+          return get(/databases/$(database)/documents/polls/$(pollId)).data;
+        }
+
+        // 每個人只能查自己那一票；票的編號固定是「自己的身分_r輪次」
+        allow get: if signedIn()
+          && (voteId == request.auth.uid + '_r1' || voteId == request.auth.uid + '_r2');
+
+        // 只有出題的老師能看全部的票
+        allow list: if signedIn() && poll().ownerUid == request.auth.uid;
+
+        // 一人一輪一票：編號固定，所以同一輪無法投第二次；只能在開放中、對目前這一輪投票
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'round', 'option', 'at'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.round is int
+          && voteId == request.auth.uid + '_r' + string(request.resource.data.round)
+          && poll().open == true
+          && request.resource.data.round == poll().round
+          && request.resource.data.option is int
+          && request.resource.data.option >= 0
+          && request.resource.data.option < poll().options.size();
+
+        allow update: if false;
+        allow delete: if signedIn() && poll().ownerUid == request.auth.uid;
+      }
+    }
+
+    // 其他資料一律拒絕
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

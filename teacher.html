@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>老師出題｜公民課堂表態</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+  <main class="wrap">
+
+    <section id="v-loading"><p class="muted">載入中…</p></section>
+
+    <section id="v-missing" class="card notice narrow" hidden>
+      <h1>還沒設定 Firebase</h1>
+      <p>請把你的 Firebase 專案設定貼到 <code>js/firebase-config.js</code>，然後重新整理這一頁。</p>
+    </section>
+
+    <section id="v-login" class="card narrow" hidden>
+      <h1>老師登入</h1>
+      <p class="muted">用 Google 帳號登入後才能出題。學生不需要登入。</p>
+      <button class="primary" id="btn-login" type="button">使用 Google 帳號登入</button>
+      <p class="error" id="login-error"></p>
+    </section>
+
+    <section id="v-create" hidden>
+      <div class="row spread">
+        <h1>出一題</h1>
+        <div class="row">
+          <span class="muted" id="who"></span>
+          <button class="small" id="btn-logout" type="button">登出</button>
+        </div>
+      </div>
+
+      <form class="card" id="create-form">
+        <label for="q">題目</label>
+        <textarea id="q" maxlength="300" required placeholder="例：防疫期間的停班停課，應該由誰決定？"></textarea>
+
+        <label>選項（2 到 6 個）</label>
+        <div id="opts"></div>
+        <div class="row">
+          <button class="small" id="btn-add-opt" type="button">＋ 新增選項</button>
+          <span class="muted">快速套用：</span>
+          <button class="small" type="button" data-preset="同意|不同意|還不確定">同意／不同意</button>
+          <button class="small" type="button" data-preset="中央政府|地方政府|中央與地方共同">中央／地方</button>
+          <button class="small" type="button" data-preset="是|否">是／否</button>
+        </div>
+
+        <p></p>
+        <button class="primary" id="btn-create" type="submit">開始投票</button>
+        <span class="error" id="create-error"></span>
+      </form>
+
+      <h2>我出過的題目</h2>
+      <div class="card">
+        <ul class="poll-list" id="my-polls"></ul>
+        <p class="muted" id="my-polls-empty" hidden>還沒有題目。</p>
+      </div>
+    </section>
+
+    <section id="v-live" hidden>
+      <div class="live">
+        <div class="card">
+          <span class="badge" id="live-badge"></span>
+          <h1 class="live-q" id="live-q"></h1>
+          <div class="count" id="live-count"></div>
+          <div id="results"></div>
+        </div>
+
+        <div class="card join">
+          <p class="muted">掃描 QR Code，或開啟下方網址輸入代碼</p>
+          <div class="qr" id="qr"></div>
+          <div class="code" id="live-code"></div>
+          <div class="url" id="live-url"></div>
+        </div>
+      </div>
+
+      <div class="card row">
+        <button class="primary" id="btn-open" type="button"></button>
+        <button id="btn-round2" type="button">開始第二輪（討論後）</button>
+        <button id="btn-results" type="button"></button>
+        <button id="btn-back" type="button">回到題目列表</button>
+        <span class="error" id="live-error"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    參考自 阿凱老師 #3 學生即時投票系統：
+    <a href="https://cagoooo.github.io/Akai/tool/3/">工具介紹頁</a>、
+    <a href="https://github.com/cagoooo/vote">原始碼</a>
+  </footer>
+
+  <script type="module" src="js/teacher.js"></script>
+</body>
+</html>

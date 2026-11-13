@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公民課堂表態</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="wrap narrow">
+    <h1>公民課堂表態</h1>
+    <p class="muted">輸入老師投影畫面上的代碼，就能參與投票。</p>
+
+    <form class="card" id="join-form">
+      <label for="code">房間代碼</label>
+      <input class="code-input" type="text" id="code" maxlength="5" autocomplete="off" autocapitalize="characters" required>
+      <p></p>
+      <button class="primary" type="submit" style="width:100%">加入</button>
+    </form>
+
+    <p class="muted" style="text-align:center"><a href="teacher.html">我是老師，要出題</a></p>
+  </main>
+
+  <footer>
+    參考自 阿凱老師 #3 學生即時投票系統：
+    <a href="https://cagoooo.github.io/Akai/tool/3/">工具介紹頁</a>、
+    <a href="https://github.com/cagoooo/vote">原始碼</a>
+  </footer>
+
+  <script>
+    document.getElementById("join-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const code = document.getElementById("code").value.trim().toUpperCase();
+      if (code) location.href = "vote.html?c=" + encodeURIComponent(code);
+    });
+  </script>
+</body>
+</html>
