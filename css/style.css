@@ -130,6 +130,37 @@ label { display: block; font-weight: 600; margin: 14px 0 6px; }
 .poll-list li { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .poll-list .q { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* 第二階段：題庫、班級、正確答案、座號 */
+h3.unit { font-size: 1rem; margin: 16px 0 4px; color: var(--muted); }
+h3.unit:first-child { margin-top: 0; }
+.tag {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 6px;
+  background: #eceef3;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.poll-list li { flex-wrap: wrap; }
+.poll-list .q { min-width: 12em; }
+select {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+label.check { font-weight: 400; display: flex; gap: 8px; align-items: center; }
+.opt-row input[type="radio"] { width: 22px; height: 22px; flex: none; align-self: center; }
+.result.correct { border-left: 6px solid var(--ok); padding-left: 12px; }
+.result.correct .result-label { color: var(--ok); }
+.answer-note { border-top: 1px solid var(--line); margin-top: 12px; }
+table.seats { border-collapse: collapse; width: 100%; }
+table.seats th, table.seats td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+table.seats th { color: var(--muted); font-weight: 600; font-size: 0.95rem; }
+
 footer { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 24px 16px; }
 footer a { color: var(--muted); }
 

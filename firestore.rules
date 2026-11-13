@@ -11,39 +11,82 @@ service cloud.firestore {
       return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
     }
 
+    function validQuestionText(data) {
+      return data.question is string
+        && data.question.size() > 0
+        && data.question.size() <= 300
+        && data.options is list
+        && data.options.size() >= 2
+        && data.options.size() <= 6;
+    }
+
+    // 題庫：只有出題的老師自己看得到、改得到（裡面有正確答案）
+    match /questions/{questionId} {
+      allow read, delete: if isTeacher() && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if isTeacher()
+        && request.resource.data.keys().hasOnly(['ownerUid', 'unit', 'question', 'options', 'correct', 'identify', 'createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && validQuestionText(request.resource.data)
+        && request.resource.data.unit is string
+        && request.resource.data.unit.size() <= 40
+        && request.resource.data.identify is bool
+        && (request.resource.data.correct == null
+            || (request.resource.data.correct is int
+                && request.resource.data.correct >= 0
+                && request.resource.data.correct < request.resource.data.options.size()));
+
+      allow update: if false;
+    }
+
+    // 一場投票 = 某一班對某一題的投票
     match /polls/{pollId} {
-      // 學生要用代碼找到題目，所以登入者（含匿名）都能讀題目
+      // 學生要用代碼找到題目，所以登入者（含匿名）都能讀
       allow read: if signedIn();
 
       allow create: if isTeacher()
-        && request.resource.data.keys().hasOnly(['ownerUid', 'code', 'question', 'options', 'round', 'open', 'createdAt'])
+        && request.resource.data.keys().hasAll(['ownerUid', 'code', 'question', 'options', 'round', 'open', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['ownerUid', 'code', 'question', 'options', 'round', 'open', 'createdAt',
+                                                 'classLabel', 'unit', 'identify', 'hasAnswer', 'answer'])
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.code is string
         && request.resource.data.code.size() >= 4
         && request.resource.data.code.size() <= 5
-        && request.resource.data.question is string
-        && request.resource.data.question.size() > 0
-        && request.resource.data.question.size() <= 300
-        && request.resource.data.options is list
-        && request.resource.data.options.size() >= 2
-        && request.resource.data.options.size() <= 6
+        && validQuestionText(request.resource.data)
         && request.resource.data.round == 1
-        && request.resource.data.open is bool;
+        && request.resource.data.open is bool
+        && request.resource.data.get('classLabel', '') is string
+        && request.resource.data.get('classLabel', '').size() <= 20
+        && request.resource.data.get('unit', '') is string
+        && request.resource.data.get('unit', '').size() <= 40
+        && request.resource.data.get('identify', false) is bool
+        && request.resource.data.get('hasAnswer', false) is bool
+        // 建立時不能帶著已公布的答案
+        && request.resource.data.get('answer', null) == null;
 
-      // 只有出題的老師能改，而且只能改「第幾輪」和「是否開放」
+      // 只有出題的老師能改，而且只能改「第幾輪」「是否開放」「公布的答案」
       allow update: if isTeacher()
         && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['round', 'open'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['round', 'open', 'answer'])
         && request.resource.data.round in [1, 2]
-        && request.resource.data.open is bool;
+        && request.resource.data.open is bool
+        && (request.resource.data.get('answer', null) == null
+            || (request.resource.data.answer is int
+                && request.resource.data.answer >= 0
+                && request.resource.data.answer < resource.data.options.size()));
 
       allow delete: if isTeacher() && resource.data.ownerUid == request.auth.uid;
 
-      match /votes/{voteId} {
-        function poll() {
-          return get(/databases/$(database)/documents/polls/$(pollId)).data;
-        }
+      function poll() {
+        return get(/databases/$(database)/documents/polls/$(pollId)).data;
+      }
 
+      // 正確答案放在這裡，只有出題的老師讀得到；公布時才由老師寫進上面的 answer 欄位
+      match /secret/{secretId} {
+        allow read, write: if isTeacher() && poll().ownerUid == request.auth.uid;
+      }
+
+      match /votes/{voteId} {
         // 每個人只能查自己那一票；票的編號固定是「自己的身分_r輪次」
         allow get: if signedIn()
           && (voteId == request.auth.uid + '_r1' || voteId == request.auth.uid + '_r2');
@@ -51,9 +94,10 @@ service cloud.firestore {
         // 只有出題的老師能看全部的票
         allow list: if signedIn() && poll().ownerUid == request.auth.uid;
 
-        // 一人一輪一票：編號固定，所以同一輪無法投第二次；只能在開放中、對目前這一輪投票
+        // 一人一輪一票：編號固定，所以同一輪無法投第二次；只能在開放中、對目前這一輪投票。
+        // 記座號的題目必須附 1 到 2 位數的座號；匿名題不能附任何座號。
         allow create: if signedIn()
-          && request.resource.data.keys().hasOnly(['uid', 'round', 'option', 'at'])
+          && request.resource.data.keys().hasOnly(['uid', 'round', 'option', 'at', 'seat'])
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.round is int
           && voteId == request.auth.uid + '_r' + string(request.resource.data.round)
@@ -61,7 +105,10 @@ service cloud.firestore {
           && request.resource.data.round == poll().round
           && request.resource.data.option is int
           && request.resource.data.option >= 0
-          && request.resource.data.option < poll().options.size();
+          && request.resource.data.option < poll().options.size()
+          && (poll().get('identify', false) == true
+              ? (request.resource.data.seat is string && request.resource.data.seat.matches('^[0-9]{1,2}$'))
+              : !('seat' in request.resource.data));
 
         allow update: if false;
         allow delete: if signedIn() && poll().ownerUid == request.auth.uid;

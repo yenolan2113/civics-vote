@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>老師出題｜公民課堂表態</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 </head>
 <body>
@@ -24,38 +24,67 @@
       <p class="error" id="login-error"></p>
     </section>
 
-    <section id="v-create" hidden>
+    <section id="v-home" hidden>
       <div class="row spread">
-        <h1>出一題</h1>
+        <h1>公民課堂表態</h1>
         <div class="row">
           <span class="muted" id="who"></span>
           <button class="small" id="btn-logout" type="button">登出</button>
         </div>
       </div>
 
-      <form class="card" id="create-form">
+      <div class="card row">
+        <label for="class-label" style="margin:0">目前班級</label>
+        <input type="text" id="class-label" list="class-list" maxlength="20" placeholder="例：801" style="width:9em">
+        <datalist id="class-list"></datalist>
+        <span class="muted">接下來開始的投票都會記在這個班名下，各班結果分開。</span>
+      </div>
+
+      <h2>新增題目</h2>
+      <form class="card" id="question-form">
+        <label for="unit">單元（可不填）</label>
+        <input type="text" id="unit" list="unit-list" maxlength="40" placeholder="例：中央政府與地方政府">
+        <datalist id="unit-list"></datalist>
+
         <label for="q">題目</label>
-        <textarea id="q" maxlength="300" required placeholder="例：防疫期間的停班停課，應該由誰決定？"></textarea>
+        <textarea id="q" maxlength="300" placeholder="例：防疫期間的停班停課，應該由誰決定？"></textarea>
 
         <label>選項（2 到 6 個）</label>
+        <p class="muted">如果這題有標準答案，點選項左邊的圓圈標記；表態題不用標。</p>
         <div id="opts"></div>
         <div class="row">
           <button class="small" id="btn-add-opt" type="button">＋ 新增選項</button>
+          <button class="small" id="btn-clear-correct" type="button">取消正確答案</button>
           <span class="muted">快速套用：</span>
           <button class="small" type="button" data-preset="同意|不同意|還不確定">同意／不同意</button>
           <button class="small" type="button" data-preset="中央政府|地方政府|中央與地方共同">中央／地方</button>
           <button class="small" type="button" data-preset="是|否">是／否</button>
         </div>
 
+        <label class="check"><input type="checkbox" id="identify"> 記座號（學生投票前要輸入座號；不勾就是完全匿名）</label>
+
         <p></p>
-        <button class="primary" id="btn-create" type="submit">開始投票</button>
-        <span class="error" id="create-error"></span>
+        <div class="row">
+          <button class="primary" id="btn-start-now" type="button">直接開始投票</button>
+          <button id="btn-save-bank" type="button">存進題庫</button>
+          <span class="error" id="form-error"></span>
+        </div>
       </form>
 
-      <h2>我出過的題目</h2>
+      <h2>題庫</h2>
       <div class="card">
-        <ul class="poll-list" id="my-polls"></ul>
-        <p class="muted" id="my-polls-empty" hidden>還沒有題目。</p>
+        <div id="bank"></div>
+        <p class="muted" id="bank-empty" hidden>題庫還是空的。在上面輸入題目後按「存進題庫」。</p>
+      </div>
+
+      <h2>投票紀錄</h2>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <label for="filter-class" style="margin:0">班級</label>
+          <select id="filter-class"></select>
+        </div>
+        <ul class="poll-list" id="records"></ul>
+        <p class="muted" id="records-empty" hidden>還沒有投票紀錄。</p>
       </div>
     </section>
 
@@ -63,6 +92,7 @@
       <div class="live">
         <div class="card">
           <span class="badge" id="live-badge"></span>
+          <span class="badge closed" id="live-class"></span>
           <h1 class="live-q" id="live-q"></h1>
           <div class="count" id="live-count"></div>
           <div id="results"></div>
@@ -80,8 +110,17 @@
         <button class="primary" id="btn-open" type="button"></button>
         <button id="btn-round2" type="button">開始第二輪（討論後）</button>
         <button id="btn-results" type="button"></button>
-        <button id="btn-back" type="button">回到題目列表</button>
+        <button id="btn-answer" type="button"></button>
+        <button id="btn-seats" type="button"></button>
+        <button id="btn-export" type="button">匯出結果</button>
+        <button id="btn-back" type="button">回到首頁</button>
         <span class="error" id="live-error"></span>
+      </div>
+
+      <div class="card" id="seat-card" hidden>
+        <h2 style="margin-top:0">座號明細</h2>
+        <p class="muted">這裡看得到每個座號的選擇，請留意不要投影給全班。</p>
+        <div id="seat-table"></div>
       </div>
     </section>
 
@@ -93,6 +132,6 @@
     <a href="https://github.com/cagoooo/vote">原始碼</a>
   </footer>
 
-  <script type="module" src="js/teacher.js"></script>
+  <script type="module" src="js/teacher.js?v=2"></script>
 </body>
 </html>
